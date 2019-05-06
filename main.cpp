@@ -14,6 +14,10 @@ class MemoryPool {
             std::cout << "Current size = " << size << ", "
                       << "new size = " << new_size << std::endl;
             this->mem = static_cast<char *>(std::realloc(mem, new_size));
+            if (this->mem == nullptr) {
+                std::cout << "Allocation failed!" << std::endl;
+                exit(EXIT_FAILURE);
+            }
             void *new_ptr = static_cast<char *>(mem) + size;
             size += n;
             return new_ptr;
@@ -35,7 +39,7 @@ class CustomAllocator {
         
         T *allocate(std::size_t n) {
             std::cout << "Requesting " << n << "*" << sizeof(T) << "="
-                 << (n*sizeof(T)) << " bytes" << std::endl;
+                 << (n*sizeof(T)) << " bytes." << std::endl;
             if (n > std::size_t(-1) / sizeof(T)) {
                 throw std::bad_alloc();
             }
@@ -62,11 +66,15 @@ int main() {
     
     MemoryPool memory_pool;
     
-    StringAllocator string_allocator(&memory_pool);
+    std::cout << "Requesting memory for Allocator." << std::endl;
+    auto allocator_memory = memory_pool.get_memory(sizeof(StringAllocator));
     
-    void *memory = memory_pool.get_memory(sizeof(StringVector));
+    auto string_allocator = new(allocator_memory) StringAllocator(&memory_pool);
     
-    StringVector *vec = new(memory) StringVector(string_allocator);
+    std::cout << "Requesting memory for std::vector." << std::endl;
+    auto vector_memory = memory_pool.get_memory(sizeof(StringVector));
+    
+    auto vec = new(vector_memory) StringVector(*string_allocator);
     
     for (auto str : {"This", "is", "a", "test", "for", "a", "std::vector",
                      "with", "a", "custom", "allocator"})
@@ -80,6 +88,8 @@ int main() {
     }
     
     vec->~StringVector();
+    
+    string_allocator->~StringAllocator();
     
     return 0;
 }
