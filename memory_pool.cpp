@@ -5,27 +5,32 @@
 
 class MemoryPool {
     public:
+    
+        MemoryPool(size_t size) {
+            this->size = size;
+            this->mem = new char[size];
+        }
+    
         ~MemoryPool() {
-            free(mem);
+            delete[] mem;
         }
         
         void *get_memory(size_t n) {
-            auto new_size = size + n;
-            std::cout << "Current size = " << size << ", "
-                      << "new size = " << new_size << std::endl;
-            this->mem = static_cast<char *>(std::realloc(mem, new_size));
-            if (this->mem == nullptr) {
-                std::cout << "Allocation failed!" << std::endl;
-                exit(EXIT_FAILURE);
+            auto new_offset = offset + n;
+            std::cout << "Current offset = " << offset << ", "
+                      << "new offset = " << new_offset << std::endl;
+            if (new_offset > size) {
+                return nullptr;
             }
-            void *new_ptr = static_cast<char *>(mem) + size;
-            size += n;
+            auto new_ptr = mem + offset;
+            offset += n;
             return new_ptr;
         }
     
     private:
-        void *mem = nullptr;
+        char *mem = nullptr;
         size_t size = 0;
+        size_t offset = 0;
 };
 
 template <class T>
@@ -45,6 +50,9 @@ class CustomAllocator {
             }
             
             auto memory = memory_pool->get_memory(n * sizeof(T));
+            if (memory == nullptr) {
+                throw std::bad_alloc();
+            }
             return static_cast<T *>(memory);
     
             throw std::bad_alloc();
@@ -64,7 +72,7 @@ typedef std::vector<std::string, StringAllocator> StringVector;
 
 int main() {
     
-    MemoryPool memory_pool;
+    MemoryPool memory_pool(4096);
     
     std::cout << "Requesting memory for Allocator." << std::endl;
     auto allocator_memory = memory_pool.get_memory(sizeof(StringAllocator));
