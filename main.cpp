@@ -3,31 +3,25 @@
 #include <cstdlib>
 #include <new>
 
-using namespace std;
-
-struct mempool {
+struct MemoryPool {
     char *mem;
     size_t offset = 0;
     size_t size;
 };
 
 template <class T>
-struct Mallocator {
+struct CustomAllocator {
     
     typedef T value_type;
     
-    Mallocator() = default;
+    MemoryPool *memory_pool;    
     
-    mempool *memory_pool;    
-    
-    Mallocator(mempool *memory_pool) {
+    CustomAllocator(MemoryPool *memory_pool) {
         this->memory_pool = memory_pool;
     }
     
-    template <class U> constexpr Mallocator(const Mallocator<U>&) noexcept {}
-    
     T* allocate(std::size_t n) {
-        cout << "Allocating " << n << "*" << sizeof(T) << "="
+        std::cout << "Allocating " << n << "*" << sizeof(T) << "="
              << (n*sizeof(T)) << " bytes" << std::endl;
         if (n > std::size_t(-1) / sizeof(T)) {
             throw std::bad_alloc();
@@ -41,47 +35,39 @@ struct Mallocator {
         return p;
         throw std::bad_alloc();
     }
-    
   void deallocate(T*, std::size_t) noexcept {
       // Not implemented
   }
-  
 };
 
-template <class T, class U>
-bool operator==(const Mallocator<T>&, const Mallocator<U>&) { return true; }
+typedef CustomAllocator<std::string> StringAllocator;
 
-template <class T, class U>
-bool operator!=(const Mallocator<T>&, const Mallocator<U>&) { return false; }
-
-typedef Mallocator<string> string_allocator;
-
-typedef std::vector<std::string,string_allocator> string_vec;
+typedef std::vector<std::string, StringAllocator> StringVector;
 
 int main() {
     
-    mempool memory_pool;
+    MemoryPool memory_pool;
     
     memory_pool.mem = new char[4096];
     
     memory_pool.size = 4096;
     
-    memory_pool.offset += sizeof(string_vec);
+    memory_pool.offset += sizeof(StringVector);
     
-    string_vec *vec = new(memory_pool.mem) string_vec((string_allocator(&memory_pool)));
+    StringVector *vec = new(memory_pool.mem) StringVector((StringAllocator(&memory_pool)));
     
     for (auto str : {"This", "is", "a", "test", "for", "a", "std::vector",
                      "with", "a", "custom", "allocator"})
     {
-        cout << "Adding string \"" << str << "\"" << endl;
+        std::cout << "Adding string \"" << str << "\"" << std::endl;
         vec->push_back(str);
     }
     
     for (auto str : *vec) {
-        cout << "Reading back string \"" << str << "\"" << endl;
+        std::cout << "Reading back string \"" << str << "\"" << std::endl;
     }
     
-    vec->~string_vec();
+    vec->~StringVector();
     
     delete[] memory_pool.mem;
     
