@@ -15,13 +15,13 @@ class MemoryPool {
         }
         
         void *get_memory(size_t n) {
-            auto new_offset = offset + n;
+            size_t new_offset = offset + n;
             std::cout << "Current offset = " << offset << ", "
                       << "new offset = " << new_offset << std::endl;
             if (new_offset > size) {
                 return nullptr;
             }
-            auto new_ptr = mem + offset;
+            char *new_ptr = mem + offset;
             offset += n;
             return new_ptr;
         }
@@ -44,7 +44,7 @@ class CustomAllocator {
         T *allocate(std::size_t n) {
             std::cout << "Requesting " << n << "*" << sizeof(T) << "="
                       << (n*sizeof(T)) << " bytes." << std::endl;
-            auto memory = memory_pool->get_memory(n * sizeof(T));
+            void *memory = memory_pool->get_memory(n * sizeof(T));
             if (memory == nullptr) {
                 throw std::bad_alloc();
             }
@@ -70,12 +70,12 @@ int main() {
     MemoryPool memory_pool(4096);
     
     std::cout << "Requesting memory for Allocator." << std::endl;
-    auto allocator_memory = memory_pool.get_memory(sizeof(StringAllocator));
+    void *allocator_memory = memory_pool.get_memory(sizeof(StringAllocator));
     
     auto string_allocator = new(allocator_memory) StringAllocator(&memory_pool);
     
     std::cout << "Requesting memory for std::vector." << std::endl;
-    auto vector_memory = memory_pool.get_memory(sizeof(StringVector));
+    void *vector_memory = memory_pool.get_memory(sizeof(StringVector));
     
     auto vec = new(vector_memory) StringVector(*string_allocator);
     
