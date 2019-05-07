@@ -5,7 +5,6 @@
 
 class MemoryPool {
     public:
-    
         MemoryPool(size_t size) {
             this->size = size;
             this->mem = new char[size];
@@ -44,11 +43,7 @@ class CustomAllocator {
         
         T *allocate(std::size_t n) {
             std::cout << "Requesting " << n << "*" << sizeof(T) << "="
-                 << (n*sizeof(T)) << " bytes." << std::endl;
-            if (n > std::size_t(-1) / sizeof(T)) {
-                throw std::bad_alloc();
-            }
-            
+                      << (n*sizeof(T)) << " bytes." << std::endl;
             auto memory = memory_pool->get_memory(n * sizeof(T));
             if (memory == nullptr) {
                 throw std::bad_alloc();
